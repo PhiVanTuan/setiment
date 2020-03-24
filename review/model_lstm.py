@@ -3,9 +3,8 @@ import torch.nn as nn
 import torch
 import numpy as np
 
-model = gensim.models.KeyedVectors.load_word2vec_format('/home/phivantuan/PycharmProjects/source-archive/word2vec/trunk/vector_merge_300.bin',binary=True)
 
-weights = torch.FloatTensor(model.wv.vectors)
+
 
 def average(arr,batch_size,hidden_dim):
     result = np.zeros((batch_size, hidden_dim))
@@ -42,7 +41,7 @@ class SentimentRNN(nn.Module):
     The RNN model that will be used to perform Sentiment analysis.
     """
 
-    def __init__(self, vocab_size, output_size, embedding_dim, hidden_dim, n_layers, drop_prob=0.5):
+    def __init__(self, weights, output_size, embedding_dim, hidden_dim, n_layers, drop_prob=0.5):
         """
         Initialize the model by setting up the layers.
         """
@@ -56,12 +55,12 @@ class SentimentRNN(nn.Module):
         # embedding
         # LSTM
         # fully_connected
-        print("vocab_size "+str(vocab_size))
+
         self.embedding = nn.Embedding.from_pretrained(weights)
         self.lstm = nn.LSTM(embedding_dim, hidden_dim, n_layers,
                             dropout=drop_prob, batch_first=True)
         self.FC = nn.Linear(hidden_dim, output_size)
-        self.dropout=nn.Dropout(0.3)
+        self.dropout=nn.Dropout(drop_prob)
         self.soft_max = nn.Softmax()
 
     def forward(self, x, hidden):
@@ -84,7 +83,7 @@ class SentimentRNN(nn.Module):
 
 
         out = self.dropout(lstm_out)
-        out = self.FC(lstm_out[:, -1, :])
+        out = self.FC(out[:, -1, :])
         # print(lstm_out.shape)
         # out = self.FC(lstm_out)
 
