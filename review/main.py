@@ -14,25 +14,42 @@ from review.model_cnnlstm import CNN_LSTM
 from review.model_lstmcnn import LSTM_CNNTextClassifier
 from review.model_lstm import SentimentRNN
 
-LSTM=0
-CNN=1
-LSTM_CNN=2
-CNN_LSTM=3
-model_word2vec = gensim.models.KeyedVectors.load_word2vec_format(
-    '/home/phivantuan/PycharmProjects/source-archive/word2vec/trunk/vector_merge_300.bin', binary=True)
+
+def get_model(option):
+    if option == LSTM:
+        model = SentimentRNN(weights, num_classes, embedding_dim, hidden_dim, n_layers)
+    elif option == CNN:
+        model = CnnTextClassifier(weights, num_classes, num_filters)
+    elif option == LSTM_CNN:
+        model = LSTM_CNNTextClassifier(weights, num_classes, num_filters, embedding_dim, hidden_dim, n_layers)
+    elif option == CNN_LSTM:
+        model = CNN_LSTM(weights, num_classes, num_filters, embedding_dim, hidden_dim, n_layers)
+    return model
+
+
+LSTM = 0
+CNN = 1
+LSTM_CNN = 2
+CNN_LSTM = 3
+
+path='/home/phivantuan/Documents/tiki/'
+model_word2vec = gensim.models.KeyedVectors.load_word2vec_format(path+'vector_merge_300.bin', binary=True)
+
+
 weights = torch.FloatTensor(model_word2vec.wv.vectors)
-batch_size=60
-num_classes=3
-num_filters=256
+batch_size = 60
+num_classes = 3
+num_filters = 256
 embedding_dim = 300
 hidden_dim = 256
 n_layers = 2
-num_epoch=10
-learning_rate=0.0001
+num_epoch = 10
+learning_rate = 0.0001
 loss_function = nn.CrossEntropyLoss()
-model=CnnTextClassifier(weights,num_classes,num_filters,embedding_dim,hidden_dim,n_layers)
-
 train_on_gpu = torch.cuda.is_available()
+model = get_model(LSTM)
+optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+
 
 def pre_process(text):
     text = text.lower()
@@ -44,11 +61,14 @@ def pre_process(text):
 
     return text.split()
 
+
 def word2idx(word):
     return model_word2vec.vocab[word].index
 
+
 def idx2word(idx):
     return model_word2vec.index2word[idx]
+
 
 def pad_features(input, seq_length=50):
     array = np.zeros(seq_length)
@@ -69,12 +89,12 @@ def pad_features(input, seq_length=50):
                 array[index] = word2idx(word)
     return array
 
-def pre_data():
 
-    features =[pad_features(x) for x in open('/home/phivantuan/PycharmProjects/nlp_ex/craw/review_train.txt').read().splitlines()]
-    encoded_labels = [int(i) for i in open("/home/phivantuan/PycharmProjects/nlp_ex/craw/label_train.txt").read().splitlines()]
-    valid_x = [pad_features(x) for x in open('/home/phivantuan/Desktop/review_valid.txt').read().splitlines()]
-    valid_y = [int(i) for i in open("/home/phivantuan/Desktop/label_valid.txt").read().splitlines()]
+def pre_data():
+    features = [pad_features(x) for x in open(path+'review_train.txt').read().splitlines()]
+    encoded_labels = [int(i) for i in open(path+'label_train.txt').read().splitlines()]
+    valid_x = [pad_features(x) for x in open(path+'review_valid.txt').read().splitlines()]
+    valid_y = [int(i) for i in open(path+'label_valid.txt').read().splitlines()]
     train_data = TensorDataset(torch.as_tensor(np.array(features).astype('long')), torch.LongTensor(encoded_labels))
     valid_data = TensorDataset(torch.as_tensor(np.array(valid_x).astype('long')), torch.LongTensor(valid_y))
 
@@ -82,17 +102,14 @@ def pre_data():
     valid_loader = DataLoader(valid_data, shuffle=True, batch_size=batch_size, drop_last=True)
     return train_loader, valid_loader
 
-def train(option):
-    counter=0
+
+def train():
+    counter = 0
     print_every = 100
     clip = 5  # gradient clipping
-    train_loader,valid_loader=pre_data()
-    if option==LSTM:model=SentimentRNN(weights,num_classes,embedding_dim,hidden_dim,n_layers)
-    elif option==CNN:model=CnnTextClassifier(weights,num_classes,num_filters)
-    elif option==LSTM_CNN:model=LSTM_CNNTextClassifier(weights,num_classes,num_filters,embedding_dim,hidden_dim,n_layers)
-    elif option==CNN_LSTM:model=CNN_LSTM(weights,num_classes,num_filters,embedding_dim,hidden_dim,n_layers)
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-    if (train_on_gpu):model.cuda()
+    train_loader, valid_loader = pre_data()
+
+    if (train_on_gpu): model.cuda()
     model.train()
     for i in range(num_epoch):
         h = model.init_hidden(batch_size)
@@ -105,7 +122,7 @@ def train(option):
             model.zero_grad()
             # print(inputs)
             # get the output from the model
-            output, h = model(inputs,h)
+            output, h = model(inputs, h)
 
             # calculate the loss and perform backprop
 
@@ -123,11 +140,11 @@ def train(option):
                     if (train_on_gpu):
                         inputs, labels = inputs.cuda(), labels.cuda()
 
-                    output, index,val_h = model(inputs,val_h)
+                    output, index, val_h = model(inputs, val_h)
                     val_loss = loss_function(output.squeeze(), labels)
                     tensor_max_value, index = torch.max(output.data, 1)
                     sums = labels.size(0)
-                    correct= index.eq(labels.data).sum().item()
+                    correct = index.eq(labels.data).sum().item()
                     predict = correct / sums
                     val_losses.append(val_loss.item())
 
@@ -138,9 +155,10 @@ def train(option):
                       "Val Loss: {:.6f}".format(np.mean(val_losses)),
                       "Accuracy:{:.2f}".format(predict))
 
+
 def test():
-    features = [pad_features(x) for x in open('/home/phivantuan/PycharmProjects/nlp_ex/craw/review_test.txt').read().splitlines()]
-    encoded_labels = [int(i) for i in open("/home/phivantuan/PycharmProjects/nlp_ex/craw/label_test.txt").read().splitlines()]
+    features = [pad_features(x) for x in open(path+'review_test.txt').read().splitlines()]
+    encoded_labels = [int(i) for i in open(path+'label_test.txt').read().splitlines()]
     train_data = TensorDataset(torch.as_tensor(np.array(features).astype('long')), torch.LongTensor(encoded_labels))
     train_loader = DataLoader(train_data, shuffle=False, batch_size=50, drop_last=True)
     val_h = model.init_hidden(50)
@@ -154,25 +172,26 @@ def test():
         if (train_on_gpu):
             inputs, labels = inputs.cuda(), labels.cuda()
 
-        output, val_h = model(inputs,val_h)
+        output, val_h = model(inputs, val_h)
         tensor_max_value, index = torch.max(output.data, 1)
         sums += labels.size(0)
         correct += index.eq(labels.data).sum().item()
-        predict = correct / sums*100
+        predict = correct / sums * 100
         print("Correct: {}".format(correct),
               "Sums: {}...".format(sums),
               "Accuracy:{:.2f}".format(predict))
 
-def predict(model,test_review):
-    features=[]
+
+def predict(model, test_review):
+    features = []
     features.append(pad_features(test_review))
-    input=torch.LongTensor(features)
+    input = torch.LongTensor(features)
     return model(input)
 
 
-# train()
-#
-# torch.save(model.state_dict(), "lstmmodel")
+train()
+
+torch.save(model.state_dict(), "lstmmodel")
 
 model.load_state_dict(torch.load("lstmmodel"))
 
