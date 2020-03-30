@@ -64,29 +64,20 @@ class SentimentRNN(nn.Module):
         self.lstm = nn.LSTM(embedding_dim, hidden_dim, n_layers,
                             dropout=drop_prob, batch_first=True)
         self.FC = nn.Linear(hidden_dim, output_size)
-        self.dropout = nn.Dropout(0.3)
+        self.dropout = nn.Dropout(drop_prob)
 
     def forward(self, x, hidden):
         """
         Perform a forward pass of our model on some input and hidden state.
         """
         batch_size = x.size(0)
-        # input=x.view(batch_size,100,300)
-        # print(hidden)
-        # embeds = self.embedding(x)
+
         embeds = self.embedding(x)
 
         # print(embeds.shape)
-        # embeds = embeds.view(batch_size,100,300)
-        lstm_out, hidden = self.lstm(embeds, hidden)
-        # result=lstm_out.detach().numpy()
-        # result=maxpool(result,batch_size,self.hidden_dim)
-        # result=torch.Tensor(result)
-        # stack_up lstm outputs
 
-        # lstm_out = result.contiguous().view(-1, self.hidden_dim)
-        # print(lstm_out.shape)
-        # out = self.FC(lstm_out)
+        lstm_out, hidden = self.lstm(embeds, hidden)
+
         out = self.dropout(lstm_out)
         out = self.FC(out[:, -1, :])
 

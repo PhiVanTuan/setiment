@@ -24,7 +24,6 @@ class LSTM_CNNTextClassifier(nn.Module):
     def forward(self, x, hidden):
 
         x = self.embedding(x)  # [B, T, E]
-        x = self.embedding(x)  # [B, T, E]
         lstm_out, hidden = self.lstm(x, hidden)
         # Apply a convolution + max pool layer for each window size
         x = torch.unsqueeze(lstm_out, 1)  # [B, C, T, E] Add a channel dim.
@@ -36,7 +35,7 @@ class LSTM_CNNTextClassifier(nn.Module):
             x2 = self.dropout(x2)  # [B, F, 1]
             xs.append(x2)
         x = torch.cat(xs, 2)
-
+        x=self.dropout(x)
         # [B, T, E]
         x = x.view(x.size(0), -1)  # [B, F * window]
         logits = self.fc(x)  # [B, class]

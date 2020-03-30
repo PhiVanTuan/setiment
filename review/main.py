@@ -1,6 +1,4 @@
 import re
-from collections import Counter
-
 import gensim
 import numpy as np
 import torch
@@ -31,10 +29,11 @@ LSTM = 0
 CNN = 1
 LSTM_CNN = 2
 CNN_LSTM = 3
-
+STR_UNKNOWN='<unknown>'
 path='/home/phivantuan/Documents/tiki/'
 model_word2vec = gensim.models.KeyedVectors.load_word2vec_format(path+'vector_merge_300.bin', binary=True)
-
+array_unkonwn=np.zeros(300)
+model_word2vec.add(STR_UNKNOWN,array_unkonwn)
 
 weights = torch.FloatTensor(model_word2vec.wv.vectors)
 batch_size = 60
@@ -47,7 +46,7 @@ num_epoch = 10
 learning_rate = 0.0001
 loss_function = nn.CrossEntropyLoss()
 train_on_gpu = torch.cuda.is_available()
-model = get_model(LSTM)
+model = get_model(LSTM_CNN)
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
 
@@ -63,7 +62,8 @@ def pre_process(text):
 
 
 def word2idx(word):
-    return model_word2vec.vocab[word].index
+    if word in model_word2vec.wv.vocab: return model_word2vec.vocab[word].index
+    else : return model_word2vec.vocab[STR_UNKNOWN].index
 
 
 def idx2word(idx):
@@ -74,19 +74,10 @@ def pad_features(input, seq_length=50):
     array = np.zeros(seq_length)
     review = pre_process(input)
     lenth = len(review)
-    if lenth < seq_length:
-        for index, word in enumerate(review):
-            if word in model_word2vec.wv.vocab:
-                array[seq_length - lenth + index] = word2idx(word)
-    elif lenth > seq_length:
-        review = review[-seq_length:]
-        for index, word in enumerate(review):
-            if word in model_word2vec.wv.vocab:
-                array[index] = word2idx(word)
-    else:
-        for index, word in enumerate(review):
-            if word in model_word2vec.wv.vocab:
-                array[index] = word2idx(word)
+    if lenth > seq_length:review = review[-seq_length:]
+    for index, word in enumerate(review):
+        array[index] = word2idx(word)
+
     return array
 
 
@@ -115,7 +106,7 @@ def train():
         h = model.init_hidden(batch_size)
         for inputs, labels in train_loader:
             counter += 1
-            print(counter)
+            
             if (train_on_gpu):
                 inputs, labels = inputs.cuda(), labels.cuda()
             h = tuple([each.data for each in h])
@@ -131,21 +122,24 @@ def train():
             # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
             nn.utils.clip_grad_norm_(model.parameters(), clip)
             optimizer.step()
+            print(str(counter) + "    :    " + str(loss.item()))
             if counter % print_every == 0:
                 val_h = model.init_hidden(batch_size)
                 val_losses = []
+                sums=0
+                correct=0
                 model.eval()
                 for inputs, labels in valid_loader:
                     val_h = tuple([each.data for each in val_h])
                     if (train_on_gpu):
                         inputs, labels = inputs.cuda(), labels.cuda()
 
-                    output, index, val_h = model(inputs, val_h)
+                    output, val_h = model(inputs, val_h)
                     val_loss = loss_function(output.squeeze(), labels)
                     tensor_max_value, index = torch.max(output.data, 1)
-                    sums = labels.size(0)
-                    correct = index.eq(labels.data).sum().item()
-                    predict = correct / sums
+                    sums+= labels.size(0)
+                    correct+= index.eq(labels.data).sum().item()
+                    predict = correct / sums*100
                     val_losses.append(val_loss.item())
 
                 model.train()
@@ -189,11 +183,11 @@ def predict(model, test_review):
     return model(input)
 
 
-train()
+# train()
+#
+# torch.save(model.state_dict(), "lstm_cnn_model")
 
-torch.save(model.state_dict(), "lstmmodel")
-
-model.load_state_dict(torch.load("lstmmodel"))
+model.load_state_dict(torch.load("lstm_cnn_model"))
 
 model.eval()
 #
