@@ -12,7 +12,7 @@ class LSTMAttention(torch.nn.Module):
         self.hidden_dim = opt.hidden_size
         self.batch_size = opt.batch_size
         self.use_gpu = torch.cuda.is_available()
-
+        self.opt=opt
         self.word_embeddings = nn.Embedding.from_pretrained(opt.weights)
         self.num_layers = opt.n_layer
         # self.bidirectional = True
@@ -64,5 +64,12 @@ class LSTMAttention(torch.nn.Module):
         # h_n (num_direction*num_layer,batch_size,hidden_dim)
         attn_out = self.attention(rnn_out, h_n_final_layer)
         logits = self.hidden2label(attn_out)
-        out_put=torch.nn.functional.softmax(logits)
+        logits2 = self.hidden2label(attn_out)
+        list_out=logits.data.tolist()
+        result = self.opt.matrix_(list_out)
+        logits=logits[:,:batch_size]
+        for index,value in enumerate(result):
+            for index_2,value_2 in enumerate(value):
+                logits.data[index][index_2] = value_2
+
         return logits

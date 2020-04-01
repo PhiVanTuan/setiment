@@ -2,12 +2,13 @@ import re
 import gensim
 import numpy as np
 import torch
+from numpy.linalg import norm
 
 
 class Argurment():
     def __init__(self):
         self.n_layer = 2
-        self.num_classes = 200
+        self.num_classes = 512
         self.embedding_dim = 300
         self.hidden_size = 256
         self.filter_size = 256
@@ -48,3 +49,21 @@ class Argurment():
 
     def idx2word(self, idx):
         return self.model_word2vec.index2word[idx]
+
+    def matrix_(self,file):
+        result = []
+        array = []
+
+        for line in file:
+            result.append([])
+            x = np.array(line).astype(np.float)
+            array.append(x)
+            for i in range(len(array)):
+                value = array[i]
+                if (i + 1 == len(array)):
+                    data = 1.0
+                else:
+                    data = np.dot(x, value) / (norm(value) * norm(x))
+                    result[len(result) - 1].append(data)
+                result[i].append(data)
+        return np.array(result)

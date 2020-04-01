@@ -20,4 +20,11 @@ def cat_test():
     list=[array1,array2]
     x=torch.cat(list,0)
     print(x)
-cat_test()
+def view_test():
+    array1=torch.tensor(np.arange(start=0, stop=100, step=1).reshape((2,50)))
+    print(array1)
+    x=array1[:, :2]
+
+    print(x)
+
+view_test()

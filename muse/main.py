@@ -15,25 +15,9 @@ from attention.model_bilstm_attention import LSTMAttention
 from review.dataset import Dataset
 
 argurment=Argurment()
-batch_size = 32
+batch_size = 40
 
-def matrix_(file):
-    result = []
-    array = []
 
-    for line in file:
-        result.append([])
-        x = np.array(line).astype(np.float)
-        array.append(x)
-        for i in range(len(array)):
-            value = array[i]
-            if (i + 1 == len(array)):
-                data = 1.0
-            else:
-                data = np.dot(x, value) / (norm(value) * norm(x))
-                result[len(result) - 1].append(data)
-            result[i].append(data)
-    return np.array(result)
 
 
 def pre_data():
@@ -45,7 +29,7 @@ def pre_data():
     ## split data into training, validation, and test data (features and labels, x and y)
     train_x, valid_x,train_y, valid_y = train_test_split(features, encoded_labels, test_size=0.005)
     print("features " + str(len(train_x)) + "  " + str(len(valid_x)))
-    train_data = Dataset(train_x, torch.as_tensor(np.array(train_y).astype('long')))
+    train_data = Dataset(features, torch.as_tensor(np.array(encoded_labels).astype('long')))
     valid_data = Dataset(valid_x, torch.as_tensor(np.array(valid_y).astype('long')))
     # # dataloaders
     # # make sure to SHUFFLE your data
@@ -69,17 +53,18 @@ def train():
     print_every = 100
     clip = 0.25  # gradient clipping
     train_loader, valid_loader = pre_data()
-    print(str(len(train_loader)) + "   :   " + str(len(valid_loader)))
+    num_batch=len(train_loader)
+    print(str(num_batch) + "   :   " + str(len(valid_loader)))
     # move model to GPU, if available
     if (train_on_gpu):
         net.cuda()
-
+    net.double()
     net.train()
     # train for some number of epochs
     for e in range(epochs):
         # initialize hidden state
         # h = net.init_hidden(batch_size)
-
+        sum=0
         # batch loop
         for inputs, labels in train_loader:
             counter += 1
@@ -97,24 +82,25 @@ def train():
             net.zero_grad()
             # print(inputs)
             # get the output from the model
-            output = net(inputs)
+            predict = net(inputs)
             # calculate the loss and perform backprop
-            result = matrix_(output.detach().numpy())
             label = labels.detach().numpy()
+
             array = []
             for index in label:
                 path = '/home/phivantuan/Documents/translate/' + str(index) + '.txt'
                 with open(path) as label_file:
                     array.append(np.array(label_file.read().split()).astype(float))
-            label = matrix_(array)
+            label = torch.tensor(argurment.matrix_(array))
 
-            loss = criterion(torch.tensor(result, requires_grad=True), torch.tensor(label))
-            print(str(counter) + "   :    " + str(loss))
+            loss = criterion(predict, label)
+            print(str(counter) + " : " + str(loss.item()))
+            sum+=loss.item()
             loss.backward()
             # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
             nn.utils.clip_grad_norm(net.parameters(), clip)
             optimizer.step()
-            # loss stats
+            #loss stats
             if counter % print_every == 0:
                 # Get validation loss
                 # val_h = net.init_hidden(batch_size)
@@ -131,25 +117,24 @@ def train():
                     if (train_on_gpu):
                         inputs, labels = inputs.cuda(), labels.cuda()
 
-                    output = net(inputs)
-                    result = matrix_(output.detach().numpy())
+                    predict = net(inputs)
+                    # result = matrix_(output.detach().numpy())
                     label = labels.detach().numpy()
                     array = []
                     for index in label:
                         path = '/home/phivantuan/Documents/translate/' + str(index) + ".txt"
                         with open(path) as label_file:
                             array.append(np.array(label_file.read().split()).astype(float))
-                    label = matrix_(array)
+                    label =argurment.matrix_(array)
 
-                    val_loss = criterion(torch.tensor(result, requires_grad=True),
-                                         torch.tensor(label))
+                    val_loss = criterion(predict,torch.tensor(label))
 
                     val_losses.append(val_loss.item())
 
                 net.train()
                 print("Epoch: {}/{}...".format(e + 1, epochs),
                       "Step: {}...".format(counter),
-                      "Loss: {:.6f}...".format(loss.item()),
+                      "Loss: {:.6f}...".format(sum/(counter-e*num_batch)),
                       "Val Loss: {:.6f}".format(np.mean(val_losses)))
 
 

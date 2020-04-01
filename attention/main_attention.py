@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 from torch import optim
 from torch.utils.data import DataLoader
-from torch.utils.data.dataset import TensorDataset
+from review.dataset import Dataset
 from attention.model import AttentionModel
 from dataset.opt import Argurment
 from attention.model_bilstm_attention import LSTMAttention
@@ -59,12 +59,12 @@ optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
 
 def pre_data():
-    features = [argurment.pad_features(x) for x in open(path + 'review_train.txt').read().splitlines()]
+    features = open(path + 'review_train.txt').read().splitlines()
     encoded_labels = [int(i) for i in open(path + 'label_train.txt').read().splitlines()]
-    valid_x = [argurment.pad_features(x) for x in open(path + 'review_valid.txt').read().splitlines()]
+    valid_x = open(path + 'review_valid.txt').read().splitlines()
     valid_y = [int(i) for i in open(path + 'label_valid.txt').read().splitlines()]
-    train_data = TensorDataset(torch.as_tensor(np.array(features).astype('long')), torch.LongTensor(encoded_labels))
-    valid_data = TensorDataset(torch.as_tensor(np.array(valid_x).astype('long')), torch.LongTensor(valid_y))
+    train_data = Dataset(features, torch.LongTensor(encoded_labels))
+    valid_data = Dataset(valid_x, torch.LongTensor(valid_y))
 
     train_loader = DataLoader(train_data, shuffle=True, batch_size=argurment.batch_size, drop_last=True)
     valid_loader = DataLoader(valid_data, shuffle=True, batch_size=argurment.batch_size, drop_last=True)
@@ -80,10 +80,13 @@ def train():
     if (train_on_gpu): model.cuda()
     model.train()
     for i in range(num_epoch):
-        # h = model.init_hidden(batch_size)
+        sum_loss=0
         for inputs, labels in train_loader:
             counter += 1
-
+            inputs = list(inputs)
+            inputs = [argurment.pad_features(x) for x in inputs]
+            inputs = torch.LongTensor(inputs)
+            inputs = inputs.type(torch.LongTensor)
             if (train_on_gpu):
                 inputs, labels = inputs.cuda(), labels.cuda()
             # h = tuple([each.data for each in h])
@@ -99,6 +102,7 @@ def train():
             # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
             nn.utils.clip_grad_norm_(model.parameters(), clip)
             optimizer.step()
+            sum_loss+=loss.item()
             print(str(counter) + "    :    " + str(loss.item()))
             if counter % print_every == 0:
                 # val_h = model.init_hidden(batch_size)
@@ -107,7 +111,10 @@ def train():
                 correct = 0
                 model.eval()
                 for inputs, labels in valid_loader:
-                    # val_h = tuple([each.data for each in val_h])
+                    inputs = list(inputs)
+                    inputs = [argurment.pad_features(x) for x in inputs]
+                    inputs = torch.LongTensor(inputs)
+                    inputs = inputs.type(torch.LongTensor)
                     if (train_on_gpu):
                         inputs, labels = inputs.cuda(), labels.cuda()
 
@@ -122,7 +129,7 @@ def train():
                 model.train()
                 print("Epoch: {}/{}...".format(i + 1, num_epoch),
                       "Step: {}...".format(counter),
-                      "Loss: {:.6f}...".format(loss.item()),
+                      "Loss: {:.6f}...".format(sum_loss/(counter-5000*i)),
                       "Val Loss: {:.6f}".format(np.mean(val_losses)),
                       "Accuracy:{:.2f}".format(predict))
 
