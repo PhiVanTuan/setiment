@@ -13,20 +13,25 @@ class Argurment():
         self.hidden_size = 256
         self.filter_size = 256
         self.STR_UNKNOWN = '<unknown>'
-        path = '/home/phivantuan/Documents/tiki/'
-        self.model_word2vec = gensim.models.KeyedVectors.load_word2vec_format(path + 'vector_merge_300.bin',
+        self.STR_PADDING = '<padding>'
+        self.path = '/home/phivantuan/Documents/tiki/a/'
+        self.path2 = '/home/phivantuan/Documents/tiki/'
+        self.model_word2vec = gensim.models.KeyedVectors.load_word2vec_format(self.path2 + 'vector_merge_300.bin',
                                                                               binary=True)
         array_unkonwn = np.zeros(self.embedding_dim)
+
         self.model_word2vec.add(self.STR_UNKNOWN, array_unkonwn)
+        # self.model_word2vec.add(self.STR_PADDING, array_unkonwn)
+        self.length_vocab = len(self.model_word2vec.vocab)
         self.dropout = 0.5
         self.weights = torch.FloatTensor(self.model_word2vec.wv.vectors)
-        self.batch_size = 60
+        self.batch_size = 50
 
     def pre_process(self, text):
         text = text.lower()
         # text=text.translate(str.maketrans(' ', ' ', string.punctuation))
         text = re.sub(r'[^\w\s]', ' ', text)
-        text = re.sub(r'\d+', ' <number>', text)
+        text = re.sub(r'\d+', ' <number> ', text)
         text = re.sub(r'\n', ' ', text)
         text = re.sub('\s+', ' ', text)
 
@@ -50,6 +55,9 @@ class Argurment():
     def idx2word(self, idx):
         return self.model_word2vec.index2word[idx]
 
+    def vector_word(self,word):
+        if word in self.model_word2vec.wv.vocab:return self.model_word2vec[word]
+        else:return self.model_word2vec[self.STR_UNKNOWN]
     def matrix_(self,file):
         result = []
         array = []
@@ -65,5 +73,5 @@ class Argurment():
                 else:
                     data = np.dot(x, value) / (norm(value) * norm(x))
                     result[len(result) - 1].append(data)
-                result[i].append(data)
+                    result[i].append(data)
         return np.array(result)

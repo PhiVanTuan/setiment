@@ -9,7 +9,7 @@ from sklearn.model_selection import train_test_split
 from torch import Tensor
 from torch.utils.data import DataLoader, TensorDataset
 from dataset.opt import Argurment
-
+from attention.model_cnn import CnnTextClassifier
 from muse.lstm import SentimentRNN
 from attention.model_bilstm_attention import LSTMAttention
 from review.dataset import Dataset
@@ -33,32 +33,32 @@ def pre_data():
     valid_data = Dataset(valid_x, torch.as_tensor(np.array(valid_y).astype('long')))
     # # dataloaders
     # # make sure to SHUFFLE your data
-    train_loader = DataLoader(train_data, shuffle=False, batch_size=batch_size, drop_last=True)
+    train_loader = DataLoader(train_data, shuffle=True, batch_size=batch_size, drop_last=True)
     # print(train_loader)
-    valid_loader = DataLoader(valid_data, shuffle=False, batch_size=batch_size, drop_last=True)
+    valid_loader = DataLoader(valid_data, shuffle=True, batch_size=batch_size, drop_last=True)
     return train_loader, valid_loader
 
 
 
-net = LSTMAttention(argurment)
+net = CnnTextClassifier(argurment.weights,512,argurment.filter_size)
 train_on_gpu = torch.cuda.is_available()
 
 
 def train():
-    lr = 0.001
+    lr = 0.005
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
-    epochs = 5  # 3-4 is approx where I noticed the validation loss stop decreasing
+    epochs = 10  # 3-4 is approx where I noticed the validation loss stop decreasing
     counter = 0
     print_every = 100
     clip = 0.25  # gradient clipping
     train_loader, valid_loader = pre_data()
     num_batch=len(train_loader)
-    print(str(num_batch) + "   :   " + str(len(valid_loader)))
+    print(str(num_batch) + " : " + str(len(valid_loader)))
     # move model to GPU, if available
     if (train_on_gpu):
         net.cuda()
-    net.double()
+
     net.train()
     # train for some number of epochs
     for e in range(epochs):
@@ -83,23 +83,25 @@ def train():
             # print(inputs)
             # get the output from the model
             predict = net(inputs)
+
             # calculate the loss and perform backprop
-            label = labels.detach().numpy()
+            label = labels.data.tolist()
 
             array = []
             for index in label:
                 path = '/home/phivantuan/Documents/translate/' + str(index) + '.txt'
                 with open(path) as label_file:
                     array.append(np.array(label_file.read().split()).astype(float))
-            label = torch.tensor(argurment.matrix_(array))
+            label = torch.tensor(argurment.matrix_(array),dtype=torch.float32)
 
             loss = criterion(predict, label)
-            print(str(counter) + " : " + str(loss.item()))
+
             sum+=loss.item()
             loss.backward()
             # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
             nn.utils.clip_grad_norm(net.parameters(), clip)
             optimizer.step()
+            print(str(counter) + " : " + str(loss.item()))
             #loss stats
             if counter % print_every == 0:
                 # Get validation loss

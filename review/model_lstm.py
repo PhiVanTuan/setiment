@@ -41,7 +41,7 @@ class SentimentRNN(nn.Module):
     The RNN model that will be used to perform Sentiment analysis.
     """
 
-    def __init__(self, weights, output_size, embedding_dim, hidden_dim, n_layers, drop_prob=0.5):
+    def __init__(self, weights, output_size, embedding_dim, hidden_dim, n_layers, drop_prob=0.0):
         """
         Initialize the model by setting up the layers.
         """
@@ -80,6 +80,8 @@ class SentimentRNN(nn.Module):
         # result=maxpool(result,batch_size,self.hidden_dim)
         # result=torch.Tensor(result)
         # stack_up lstm outputs
+        param=self.parameters()
+
 
 
         out = self.dropout(lstm_out)

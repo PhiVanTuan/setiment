@@ -18,8 +18,10 @@ class CnnTextClassifier(nn.Module):
         ])
         self.drop_out=nn.Dropout(drop_out)
         self.fc = nn.Linear(num_filters * len(window_sizes), num_classes)
+        self.cosine = nn.CosineSimilarity(dim=0)
 
     def forward(self, x):
+        batch_size=x.size(0)
         x = self.embedding(x)           # [batch_size, T, embeding_dim]
 
         # Apply a convolution + max pool layer for each window size
@@ -36,24 +38,25 @@ class CnnTextClassifier(nn.Module):
         # FC
         x = x.view(x.size(0), -1)       # [batch_size, F * window]
         logits = self.fc(x)             # [batch_size, class]
+        logits=logits.double()
+        list_out_test=[logits[x,:,] for x in range(batch_size)]
+
+
+        array=[]
+
+        for index,v in enumerate(list_out_test):
+            x=list_out_test[index]
+            for i,value in enumerate(list_out_test):
+                y = self.cosine(x, value)
+                if not y==1:
+                   array.append(y)
+
+        test = torch.stack(array,0)
+        test=test.view(batch_size,batch_size-1)
 
         # Prediction
         # probs = F.softmax(logits)       # [batch_size, class]
 
 
-        return logits
+        return test
 
-    # def init_hidden(self, batch_size):
-    #     ''' Initializes hidden state '''
-    #     # Create two new tensors with sizes n_layers x batch_size x hidden_dim,
-    #     # initialized to zero, for hidden state and cell state of LSTM
-    #     weight = next(self.parameters()).data
-    #     train_on_gpu = torch.cuda.is_available()
-    #     if (train_on_gpu):
-    #         hidden = (weight.new(self.n_layers, batch_size, self.hidden_dim).zero_().cuda(),
-    #                   weight.new(self.n_layers, batch_size, self.hidden_dim).zero_().cuda())
-    #     else:
-    #         hidden = (weight.new(self.n_layers, batch_size, self.hidden_dim).zero_(),
-    #                   weight.new(self.n_layers, batch_size, self.hidden_dim).zero_())
-    #
-    #     return hidden

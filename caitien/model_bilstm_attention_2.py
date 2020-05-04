@@ -5,10 +5,10 @@ from torch.autograd import Variable
 
 
 
-class LSTMAttention(torch.nn.Module):
+class LSTMAttention2(torch.nn.Module):
     def __init__(self, opt):
 
-        super(LSTMAttention, self).__init__()
+        super(LSTMAttention2, self).__init__()
         self.hidden_dim = opt.hidden_size
         self.batch_size = opt.batch_size
         self.use_gpu = torch.cuda.is_available()
@@ -23,7 +23,7 @@ class LSTMAttention(torch.nn.Module):
         # self.hidden = self.init_hidden()
 
         self.attn_fc = torch.nn.Linear(opt.embedding_dim, 1)
-        self.out_fc=nn.Linear(opt.num_classes,2)
+        self.out_fc=nn.Linear(opt.num_classes,5)
         self.soft_max=nn.Softmax()
         self.cosine=nn.CosineSimilarity(dim=0)
 

@@ -31,13 +31,13 @@ LSTM_CNN = 2
 CNN_LSTM = 3
 STR_UNKNOWN='<unknown>'
 path='/home/phivantuan/Documents/tiki/'
-model_word2vec = gensim.models.KeyedVectors.load_word2vec_format(path+'vector_merge_300.bin', binary=True)
+model_word2vec = gensim.models.KeyedVectors.load_word2vec_format(path+'vector_300.bin', binary=True)
 array_unkonwn=np.zeros(300)
 model_word2vec.add(STR_UNKNOWN,array_unkonwn)
 
 weights = torch.FloatTensor(model_word2vec.wv.vectors)
-batch_size = 60
-num_classes = 3
+batch_size = 50
+num_classes = 2
 num_filters = 256
 embedding_dim = 300
 hidden_dim = 256
@@ -54,7 +54,7 @@ def pre_process(text):
     text = text.lower()
     # text=text.translate(str.maketrans(' ', ' ', string.punctuation))
     text = re.sub(r'[^\w\s]', ' ', text)
-    text = re.sub(r'\d+', ' <number>', text)
+    text = re.sub(r'\d+', ' <number> ', text)
     text = re.sub(r'\n', ' ', text)
     text = re.sub('\s+', ' ', text)
 
@@ -99,14 +99,16 @@ def train():
     print_every = 100
     clip = 5  # gradient clipping
     train_loader, valid_loader = pre_data()
-
+    num_batch=len(train_loader)
+    print(num_batch)
     if (train_on_gpu): model.cuda()
     model.train()
     for i in range(num_epoch):
         h = model.init_hidden(batch_size)
+        sum_loss = 0
         for inputs, labels in train_loader:
             counter += 1
-            
+
             if (train_on_gpu):
                 inputs, labels = inputs.cuda(), labels.cuda()
             h = tuple([each.data for each in h])
@@ -122,7 +124,8 @@ def train():
             # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
             nn.utils.clip_grad_norm_(model.parameters(), clip)
             optimizer.step()
-            print(str(counter) + "    :    " + str(loss.item()))
+            sum_loss+=loss.item()
+            print(str(counter) + " : " + str(loss.item()))
             if counter % print_every == 0:
                 val_h = model.init_hidden(batch_size)
                 val_losses = []
@@ -145,7 +148,7 @@ def train():
                 model.train()
                 print("Epoch: {}/{}...".format(i + 1, num_epoch),
                       "Step: {}...".format(counter),
-                      "Loss: {:.6f}...".format(loss.item()),
+                      "Loss: {:.6f}...".format(sum_loss/(counter-i*num_batch)),
                       "Val Loss: {:.6f}".format(np.mean(val_losses)),
                       "Accuracy:{:.2f}".format(predict))
 
@@ -183,9 +186,9 @@ def predict(model, test_review):
     return model(input)
 
 
-# train()
-#
-# torch.save(model.state_dict(), "lstm_cnn_model")
+train()
+
+torch.save(model.state_dict(), "lstm_cnn_model")
 
 model.load_state_dict(torch.load("lstm_cnn_model"))
 

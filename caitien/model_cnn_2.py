@@ -3,10 +3,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class CnnTextClassifier(nn.Module):
+class CnnTextClassifier2(nn.Module):
     def __init__(self, weights, num_classes,num_filters,drop_out=0.5,window_sizes=(3, 4, 5)):
 
-        super(CnnTextClassifier, self).__init__()
+        super(CnnTextClassifier2, self).__init__()
 
         self.embedding = nn.Embedding.from_pretrained(weights)
         self.n_layers=2
@@ -18,8 +18,12 @@ class CnnTextClassifier(nn.Module):
         ])
         self.drop_out=nn.Dropout(drop_out)
         self.fc = nn.Linear(num_filters * len(window_sizes), num_classes)
+        self.cosine = nn.CosineSimilarity(dim=0)
+        self.fc_out=nn.Linear(num_classes,2)
+        self.soft_max = nn.Softmax()
 
     def forward(self, x):
+        batch_size=x.size(0)
         x = self.embedding(x)           # [batch_size, T, embeding_dim]
 
         # Apply a convolution + max pool layer for each window size
@@ -36,24 +40,25 @@ class CnnTextClassifier(nn.Module):
         # FC
         x = x.view(x.size(0), -1)       # [batch_size, F * window]
         logits = self.fc(x)             # [batch_size, class]
+        out_put=self.fc_out(logits)
+        out_put=self.soft_max(out_put)
+        # logits=logits.double()
+        # list_out_test=[logits[x,:,] for x in range(batch_size)]
+        #
+        #
+        # array=[]
+        #
+        # for index,v in enumerate(list_out_test):
+        #     x=list_out_test[index]
+        #     for i,value in enumerate(list_out_test):
+        #         y = self.cosine(x, value)
+        #         array.append(y)
+        #
+        # test = torch.stack(array,0)
+        # test=test.view(batch_size,batch_size)
 
         # Prediction
         # probs = F.softmax(logits)       # [batch_size, class]
 
 
-        return logits
-
-    # def init_hidden(self, batch_size):
-    #     ''' Initializes hidden state '''
-    #     # Create two new tensors with sizes n_layers x batch_size x hidden_dim,
-    #     # initialized to zero, for hidden state and cell state of LSTM
-    #     weight = next(self.parameters()).data
-    #     train_on_gpu = torch.cuda.is_available()
-    #     if (train_on_gpu):
-    #         hidden = (weight.new(self.n_layers, batch_size, self.hidden_dim).zero_().cuda(),
-    #                   weight.new(self.n_layers, batch_size, self.hidden_dim).zero_().cuda())
-    #     else:
-    #         hidden = (weight.new(self.n_layers, batch_size, self.hidden_dim).zero_(),
-    #                   weight.new(self.n_layers, batch_size, self.hidden_dim).zero_())
-    #
-    #     return hidden
+        return out_put

@@ -192,7 +192,7 @@
 # def predict(net, test_review):
 #     features = []
 #     features.append(pad_features(test_review))
-#     # features=[pad_features(x) for x in open('review_test.txt').read().splitlines()]
+#     # features=[pad_features(x) for x in open('review_train.txt').read().splitlines()]
 #
 #     # changing the features to PyTorch tensor
 #     features = torch.as_tensor(np.array(features).astype('long'))
@@ -211,8 +211,8 @@
 #
 #
 # def test():
-#     features = open('review_test.txt').read().splitlines()
-#     encoded_labels = [int(i) for i in open("label_test.txt").read().splitlines()]
+#     features = open('review_train.txt').read().splitlines()
+#     encoded_labels = [int(i) for i in open("label_train.txt").read().splitlines()]
 #     train_data = Dataset(features, torch.as_tensor(np.array(encoded_labels).astype('long')))
 #     train_loader = DataLoader(train_data, shuffle=False, batch_size=50, drop_last=True)
 #     val_h = net.init_hidden(50)

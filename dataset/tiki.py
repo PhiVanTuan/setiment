@@ -1,6 +1,9 @@
 import os
 import json
 import re
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 
 
 def get_text(array):
@@ -39,102 +42,256 @@ def write_file(file_train, file_test, file_valid, array):
 
 
 path = '/home/phivantuan/Documents/craw2/'
-
+path2 = '/home/phivantuan/Documents/data_train/test/neg/'
+path3 = '/home/phivantuan/Documents/data_train/test/pos/'
+path4 = '/home/phivantuan/Documents/tiki/review_train.txt'
 files = []
+files2 = []
 # r=root, d=directories, f = files
 for r, d, f in os.walk(path):
     for file in f:
         if '.txt' in file:
             files.append(os.path.join(r, file))
-oneStar = 0
-twoStar = 0
-threeStar = 0
-fourStar = 0
-fiveStar = 0
-# label=""
-with open('negative_train.txt', 'w') as negative_train:
-    with open('negative_test.txt', 'w') as negative_test:
-        with open('negative_valid.txt', 'w') as negative_valid:
-            with open('positive_train.txt', 'w') as positive_train:
-                with open('positive_test.txt', 'w') as positive_test:
-                    with open('positive_valid.txt', 'w') as positive_valid:
-                        with open('neutral_train.txt', 'w') as neutral_train:
-                            with open('neutral_test.txt', 'w') as neutral_test:
-                                with open('neutral_valid.txt', 'w') as neutral_valid:
-                                    for f in files:
-                                        try:
-                                            # print(f)
-                                            data = json.loads(open(f).read())
-                                            negative = data['1']
-                                            negative.extend(data['2'])
-                                            write_file(negative_train,negative_test,negative_valid,negative)
-                                            neu = data['4']
-                                            neu.extend(data['3'])
-                                            write_file(neutral_train, neutral_test, neutral_valid, neu)
-                                            positive = data['5']
-                                            write_file(positive_train, positive_test, positive_valid, positive)
-                                            oneStar += len(negative)
-                                            fourStar += len(neu)
-                                            fiveStar += len(positive)
-                                            print(oneStar)
-                                            # for one in negative:
-                                            #     one = " ".join(one.splitlines())
-                                            #     ne_file.write(one + '\n')
-                                            #
-                                            # for n in neu:
-                                            #     n = " ".join(n.splitlines())
-                                            #     nt_file.write(n + '\n')
-                                            #
-                                            # for p in positive:
-                                            #     p = " ".join(p.splitlines())
-                                            #     po_file.write(p + '\n')
 
 
-                                        except:
-                                            print("error " + f)
-# # with open('review_test.txt','w') as review:
-# #         for f in files:
-# #             try:
-# #                 # print(f)
-# #                 data = json.loads(open(f).read())
-# #                 negative = data['1']
-# #                 negative.extend(data['2'])
-# #                 negative.extend(data['3'])
-# #                 neu = data['4']
-# #                 positive = data['5']
-# #                 oneStar += len(negative)
-# #                 fourStar += len(neu)
-# #                 fiveStar += len(positive)
-# #                 print(oneStar)
-# #                 for one in negative:
-# #                     one=" ".join(one.splitlines())
-# #                     review.write(one +'\n')
-# #                     label+="0\n"
-# #                 if (fourStar < 135000):
-# #                     for n in neu:
-# #                         n=" ".join(n.splitlines())
-# #                         review.write(n + '\n')
-# #                         label += "1\n"
-# #                 if fiveStar < 135000:
-# #                     for p in positive:
-# #                         p=" ".join(p.splitlines())
-# #                         review.write(p + '\n')
-# #                         label += "2\n"
-# #                 # print("oneStar :  " + str(oneStar) + "  twoStar :  " + str(twoStar) + "  threeStar :  " + str(
-# #                 #     threeStar) + "  fourStar :  " + str(fourStar) + "  fiveStar :  " + str(fiveStar))
-# #             except:
-# #                 print("error " + f)
-#
-# # open('label_test.txt','w').write(label)
+# for r, d, f in os.walk(path3):
+#     for file in f:
+#         if '.txt' in file:
+#             files2.append(os.path.join(r, file))
+# sum=0
+# with open(path4) as review_file:
+#     for line in review_file:
+#         sum+=len(line.split())
+# print(sum/70000)
+def get_review():
+    one = 0
+    two = 0
+    three = 0
+    four = 0
+    five = 0
+    # label=""
+    with open('oneStar_train.txt', 'w') as oneStar_train:
+        with open('oneStar_test.txt', 'w') as oneStar_test:
+            with open('oneStar_valid.txt', 'w') as oneStar_valid:
+                with open('twoStar_train.txt', 'w') as twoStar_train:
+                    with open('twoStar_test.txt', 'w') as twoStar_test:
+                        with open('twoStar_valid.txt', 'w') as twoStar_valid:
+                            with open('threeStar_train.txt', 'w') as threeStar_train:
+                                with open('threeStar_test.txt', 'w') as threeStar_test:
+                                    with open('threeStar_valid.txt', 'w') as threeStar_valid:
+                                        with open('fourStar_train.txt', 'w') as fourStar_train:
+                                            with open('fourStar_valid.txt', 'w') as fourStar_valid:
+                                                with open('fourStar_test.txt', 'w') as fourStar_test:
+                                                    with open('fiveStar_train.txt', 'w') as fiveStar_train:
+                                                        with open('fiveStar_valid.txt', 'w') as fiveStar_valid:
+                                                            with open('fiveStar_test.txt', 'w') as fiveStar_test:
+                                                                for f in files:
+                                                                    try:
+                                                                        # print(f)
+                                                                        data = json.loads(open(f).read())
+                                                                        oneStar = data['1']
+                                                                        write_file(oneStar_train, oneStar_test,oneStar_valid,oneStar)
+                                                                        twoStar = data['2']
+                                                                        write_file(twoStar_train, twoStar_test,
+                                                                                   twoStar_valid, twoStar)
+                                                                        threeStar = data['3']
+                                                                        write_file(threeStar_train, threeStar_test,
+                                                                               threeStar_test, threeStar)
+                                                                        fourStar=data['4']
+                                                                        write_file(fourStar_train, fourStar_test,
+                                                                               fourStar_valid, fourStar)
+                                                                        fiveStar = data['5']
+
+                                                                        write_file(fiveStar_train, fiveStar_test,
+                                                                                   fiveStar_valid,
+                                                                                   fiveStar)
+                                                                        one+=len(oneStar)
+                                                                        two+=len(twoStar)
+                                                                        three+=len(threeStar)
+                                                                        four+=len(fourStar)
+                                                                        five+=len(fiveStar)
+                                                                        print(str(one)+" : "+str(two)+" : "+str(three)+" : "+str(four)+" : "+str(five))
+                                                                        # for one in negative:
+                                                                        #     one = " ".join(one.splitlines())
+                                                                        #     ne_file.write(one + '\n')
+                                                                        #
+                                                                        # for n in neu:
+                                                                        #     n = " ".join(n.splitlines())
+                                                                        #     nt_file.write(n + '\n')
+                                                                        #
+                                                                        # for p in positive:
+                                                                        #     p = " ".join(p.splitlines())
+                                                                        #     po_file.write(p + '\n')
+
+
+                                                                    except:
+                                                                        print("error " + f)
+
+
+def get_word2vec_file():
+    oneStar = 0
+    with open('review_train.txt', 'w') as review:
+        for f in files:
+            try:
+                # print(f)
+                data = json.loads(open(f).read())
+                negative = data['1']
+                negative.extend(data['2'])
+                negative.extend(data['3'])
+                neu = data['4']
+                positive = data['5']
+                oneStar += len(negative)
+
+                print(oneStar)
+                for one in negative:
+                    one = " ".join(one.splitlines())
+                    review.write(one + '\n')
+                for n in neu:
+                    n = " ".join(n.splitlines())
+                    review.write(n + '\n')
+
+                for p in positive:
+                    p = " ".join(p.splitlines())
+                    review.write(p + '\n')
+
+                # print("oneStar :  " + str(oneStar) + "  twoStar :  " + str(twoStar) + "  threeStar :  " + str(
+                #     threeStar) + "  fourStar :  " + str(fourStar) + "  fiveStar :  " + str(fiveStar))
+            except:
+                print("error " + f)
+
+
+def word2vec_file():
+    with open('review_tiki.txt', 'w') as out_file:
+        with open('review_train.txt') as in_file:
+            for text in in_file:
+                text = text.lower()
+                text = re.sub(r'[^\w\s]', ' <punct> ', text)
+                text = re.sub(r'\d+', ' <number>', text)
+                text = re.sub(r'\n', ' ', text)
+                text = re.sub('\s+', ' ', text)
+                out_file.write(text)
+
+def write_label_file(file,label_file,review_file,label):
+    for index,line in enumerate(file):
+        if(index<5000):
+            review_file.write(line)
+            label_file.write(label+"\n")
+        else:break
+def get_label():
+    with open('label_test.txt', 'w') as label_train:
+        with open('review_test.txt', 'w') as review_train:
+            with open('oneStar_test.txt') as oneStar:
+                with open('twoStar_test.txt') as twoStar:
+                    with open('threeStar_test.txt') as threeStar:
+                        with open('fourStar_test.txt') as fourStar:
+                            with open('fiveStar_test.txt') as fiveStar:
+                                write_label_file(oneStar,label_train,review_train,"0")
+                                write_label_file(twoStar,label_train,review_train,"1")
+                                write_label_file(threeStar,label_train,review_train,"2")
+                                write_label_file(fourStar,label_train,review_train,"3")
+                                write_label_file(fiveStar,label_train,review_train,"4")
+                                # for index,line in enumerate()
+                                # for line in ne_file:
+                                #     review_train.write(line)
+                                #     label_train.write("0\n")
+                                # for line in po_file:
+                                #     review_train.write(line)
+                                #     label_train.write("1\n")
+get_label()
+
+def get_vlsp():
+    with open('review_train.txt', 'w') as review_train:
+        with open('label_train.txt', 'w') as label_train:
+            # with open('review_valid.txt','w') as review_valid:
+            #     with open('label_valid.txt','w') as label_valid:
+            #         with open('review_test.txt','w') as review_test:
+            #             with open('label_test.txt','w') as label_test:
+            with open('/home/phivantuan/Documents/SA2016-training_data/SA2016-training_data/negative.txt') as ne_file:
+                with open(
+                        '/home/phivantuan/Documents/SA2016-training_data/SA2016-training_data/neutral.txt') as neu_file:
+                    with open(
+                            '/home/phivantuan/Documents/SA2016-training_data/SA2016-training_data/positive.txt') as po_file:
+                        for f in ne_file:
+                            if f.strip():
+                                review_train.write(f)
+                                label_train.write("0\n")
+                        for f in neu_file:
+                            if f.strip():
+                                review_train.write(f)
+                                label_train.write("1\n")
+                        for f in po_file:
+                            if f.strip():
+                                review_train.write(f)
+                                label_train.write("2\n")
+
+
+def get_length():
+    sum = 0
+    with open('/home/phivantuan/Documents/vn_use/train_sens.txt') as in_file:
+        reviews_len = [len(x.split()) for x in in_file]
+
+        pd.Series(reviews_len).hist()
+        plt.show()
+        print(pd.Series(reviews_len).describe())
+        # for index,line in enumerate(in_file):
+        #     sum+=len(line.split())
+        #     print(sum/(index+1))
+
+
+def vlsp_valid():
+    with open('review_valid.txt', 'w') as re_file:
+        with open('label_valid.txt', 'w') as la_file:
+            with open('review_train.txt') as train_file:
+                with open('review_train.txt', 'w') as re_train:
+                    with open('label_train.txt', 'w') as la_train:
+                        for index, line in enumerate(train_file):
+                            if index < 170:
+                                re_file.write(line)
+                                la_file.write('0\n')
+                            elif index < 1700:
+                                re_train.write(line)
+                                la_train.write('0\n')
+                            elif index < 1870:
+                                re_file.write(line)
+                                la_file.write('1\n')
+                            elif index < 3400:
+                                re_train.write(line)
+                                la_train.write('1\n')
+                            elif index < 3570:
+                                re_file.write(line)
+                                la_file.write('2\n')
+                            else:
+                                re_train.write(line)
+                                la_train.write('2\n')
+
+
+def vlsp_test():
+    with open('review_test.txt', 'w') as re_file:
+        with open('label_test.txt', 'w') as la_file:
+            with open('/home/phivantuan/Documents/test_raw_ANS.txt') as file:
+                for index, line in enumerate(file):
+                    if line.strip() == 'POS':
+                        la_file.write('2\n')
+                    elif line.strip() == 'NEU':
+                        la_file.write('1\n')
+                    elif line.strip() == 'NEG':
+                        la_file.write('0\n')
+                    else:
+                        re_file.write(line)
+
+# get_review()
+
+# word2vec_file()
+# # open('label_train.txt','w').write(label)
 # print("FINAL :   oneStar :  " + str(oneStar) + "  fourStar :  " + str(fourStar) + "  fiveStar :  " + str(fiveStar))
 # file=open('negative.txt')
 # with open('review_train.txt', 'w') as review_file:
-#     with open('review_test.txt', 'w') as review_test_file:
+#     with open('review_train.txt', 'w') as review_test_file:
 #         with open('negative.txt') as ne_file:
 #             with open('positive.txt') as po_file:
 #                 with open('neutral.txt') as net_file:
 #                     with open('label_train.txt', 'w') as lb_train:
-#                         with open('label_test.txt', 'w') as lb_test:
+#                         with open('label_train.txt', 'w') as lb_test:
 #                             for index, line in enumerate(ne_file):
 #                                 if (index < 100000):
 #                                     review_file.write(line)

@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch import optim
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, TensorDataset
 from review.dataset import Dataset
 from attention.model import AttentionModel
 from dataset.opt import Argurment
@@ -76,7 +76,7 @@ def train():
     print_every = 100
     clip = 5  # gradient clipping
     train_loader, valid_loader = pre_data()
-
+    num_batch=len(train_loader)
     if (train_on_gpu): model.cuda()
     model.train()
     for i in range(num_epoch):
@@ -103,7 +103,7 @@ def train():
             nn.utils.clip_grad_norm_(model.parameters(), clip)
             optimizer.step()
             sum_loss+=loss.item()
-            print(str(counter) + "    :    " + str(loss.item()))
+            print(str(counter) + " : " + str(loss.item()))
             if counter % print_every == 0:
                 # val_h = model.init_hidden(batch_size)
                 val_losses = []
@@ -129,10 +129,41 @@ def train():
                 model.train()
                 print("Epoch: {}/{}...".format(i + 1, num_epoch),
                       "Step: {}...".format(counter),
-                      "Loss: {:.6f}...".format(sum_loss/(counter-5000*i)),
+                      "Loss: {:.6f}...".format(sum_loss/(counter-num_batch*i)),
                       "Val Loss: {:.6f}".format(np.mean(val_losses)),
                       "Accuracy:{:.2f}".format(predict))
+
+def test():
+    features = [argurment.pad_features(x) for x in open(path+'review_test.txt').read().splitlines()]
+    encoded_labels = [int(i) for i in open(path+'label_test.txt').read().splitlines()]
+    train_data = TensorDataset(torch.as_tensor(np.array(features).astype('long')), torch.LongTensor(encoded_labels))
+    train_loader = DataLoader(train_data, shuffle=False, batch_size=50, drop_last=True)
+
+    sums = 0
+    correct = 0
+    model.eval()
+    for inputs, labels in train_loader:
+
+
+        if (train_on_gpu):
+            inputs, labels = inputs.cuda(), labels.cuda()
+
+        output = model(inputs)
+        tensor_max_value, index = torch.max(output.data, 1)
+        sums += labels.size(0)
+        correct += index.eq(labels.data).sum().item()
+        predict = correct / sums * 100
+        print("Correct: {}".format(correct),
+              "Sums: {}...".format(sums),
+              "Accuracy:{:.2f}".format(predict))
+
 
 train()
 
 torch.save(model.state_dict(), "attention_model")
+
+model.load_state_dict(torch.load("attention_model"))
+
+model.eval()
+#
+test()

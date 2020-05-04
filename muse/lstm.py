@@ -5,45 +5,45 @@ import numpy as np
 
 from torchtext.vocab import Vectors
 
-model = gensim.models.KeyedVectors.load_word2vec_format(
-    '/home/phivantuan/PycharmProjects/source-archive/word2vec/trunk/vector_merge_300.bin', binary=True)
-
-weights = torch.FloatTensor(model.wv.vectors)
-
-
-def average(arr, batch_size, hidden_dim):
-    result = np.zeros((batch_size, hidden_dim))
-    for index, x in enumerate(arr):
-        result[index] = np.average(x)
-    return result
-
-
-def min_pool(arr, batch_size, hidden_dim):
-    result = np.zeros((batch_size, hidden_dim))
-    for index, x in enumerate(arr):
-        result[index] = numpy_min(x)
-    return result
-
-
-def maxpool(arr, batch_size, hidden_dim):
-    result = np.zeros((batch_size, hidden_dim))
-    for index, x in enumerate(arr):
-        result[index] = numpy_max(x)
-    return result
-
-
-def numpy_min(arr):
-    xresult = arr[0]
-    for x in arr:
-        xresult = np.minimum(x, xresult)
-    return xresult
-
-
-def numpy_max(arr):
-    xresult = arr[0]
-    for x in arr:
-        xresult = np.maximum(x, xresult)
-    return xresult
+# model = gensim.models.KeyedVectors.load_word2vec_format(
+#     '/home/phivantuan/PycharmProjects/source-archive/word2vec/trunk/vector_merge_300.bin', binary=True)
+#
+# weights = torch.FloatTensor(model.wv.vectors)
+#
+#
+# def average(arr, batch_size, hidden_dim):
+#     result = np.zeros((batch_size, hidden_dim))
+#     for index, x in enumerate(arr):
+#         result[index] = np.average(x)
+#     return result
+#
+#
+# def min_pool(arr, batch_size, hidden_dim):
+#     result = np.zeros((batch_size, hidden_dim))
+#     for index, x in enumerate(arr):
+#         result[index] = numpy_min(x)
+#     return result
+#
+#
+# def maxpool(arr, batch_size, hidden_dim):
+#     result = np.zeros((batch_size, hidden_dim))
+#     for index, x in enumerate(arr):
+#         result[index] = numpy_max(x)
+#     return result
+#
+#
+# def numpy_min(arr):
+#     xresult = arr[0]
+#     for x in arr:
+#         xresult = np.minimum(x, xresult)
+#     return xresult
+#
+#
+# def numpy_max(arr):
+#     xresult = arr[0]
+#     for x in arr:
+#         xresult = np.maximum(x, xresult)
+#     return xresult
 
 
 class SentimentRNN(nn.Module):
@@ -51,7 +51,7 @@ class SentimentRNN(nn.Module):
     The RNN model that will be used to perform Sentiment analysis.
     """
 
-    def __init__(self, output_size, embedding_dim, hidden_dim, n_layers, drop_prob=0.5):
+    def __init__(self, weights,output_size, embedding_dim, hidden_dim, n_layers, drop_prob=0.5):
         """
         Initialize the model by setting up the layers.
         """
